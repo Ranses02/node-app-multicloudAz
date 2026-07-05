@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Sistema Multicloud</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .login-container { display: flex; justify-content: center; align-items: center; height: 80vh; }
+        .login-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .error-msg { color: #dc2626; font-size: 0.9rem; margin-top: 10px; display: none; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h2 style="text-align: center; border: none; margin-bottom: 10px;">Iniciar Sesión</h2>
+            <p style="text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 20px;">Acceso restringido Evaluación</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" required placeholder="Ej: admin">
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+                <button type="submit">Ingresar al Sistema</button>
+                <div id="errorBox" class="error-msg"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorBox = document.getElementById('errorBox');
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    errorBox.innerText = data.message;
+                    errorBox.style.display = 'block';
+                }
+            } catch (err) {
+                errorBox.innerText = 'Error al conectar con el servidor';
+                errorBox.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

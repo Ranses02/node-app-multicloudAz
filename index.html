@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Inventario | INACAP Multicloud</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gestión de Inventario</h1>
+            <p class="subtitle">Arquitectura Híbrida: AWS RDS (PostgreSQL) + Azure Blobs</p>
+        </header>
+
+        <main class="main-content">
+            <section class="card-form">
+                <h2>Añadir Nuevo Producto</h2>
+                <form id="productoForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="nombre">Nombre del Producto</label>
+                        <input type="text" id="nombre" name="nombre" required placeholder="Ej: Teclado Mecánico">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="precio">Precio (CLP)</label>
+                        <input type="number" id="precio" name="precio" required placeholder="Ej: 45000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="imagen">Imagen del Producto</label>
+                        <input type="file" id="imagen" name="imagen" accept="image/*" required>
+                    </div>
+
+                    <button type="submit" id="btnEnviar">Subir a Azure y Persistir en AWS</button>
+                </form>
+            </section>
+
+            <section class="card-table">
+                <h2>Productos en Inventario</h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Precio</th>
+                                <th>Preview (Azure)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaProductos"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const form = document.getElementById('productoForm');
+        const btnEnviar = document.getElementById('btnEnviar');
+        const tablaProductos = document.getElementById('tablaProductos');
+
+        async function cargarProductos() {
+            try {
+                const res = await fetch('/api/productos');
+                const productos = await res.json();
+                tablaProductos.innerHTML = '';
+                if(productos.length === 0) {
+                    tablaProductos.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">No hay productos registrados.</td></tr>`;
+                    return;
+                }
+                productos.forEach(prod => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${prod.id}</td>
+                        <td><strong>${prod.nombre}</strong></td>
+                        <td>$${Number(prod.precio).toLocaleString('es-CL')}</td>
+                        <td>
+                            <a href="${prod.url_imagen}" target="_blank">
+                                <img src="${prod.url_imagen}" alt="${prod.nombre}" class="thumbnail">
+                            </a>
+                        </td>
+                    `;
+                    tablaProductos.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Error al cargar la tabla:", err);
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            btnEnviar.innerText = 'Subiendo archivos...';
+            btnEnviar.disabled = true;
+            const formData = new FormData(form);
+            try {
+                const response = await fetch('/api/productos', { method: 'POST', body: formData });
+                if (response.ok) {
+                    form.reset();
+                    await cargarProductos();
+                } else {
+                    alert('Error al procesar la subida del producto.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Ocurrió un problema de conexión.');
+            } finally {
+                btnEnviar.innerText = 'Subir a Azure y Persistir en AWS';
+                btnEnviar.disabled = false;
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', cargarProductos);
+    </script>
+</body>
+</html>
