@@ -3,55 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor de Imágenes MultiCloud</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Catálogo MultiCloud</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; text-align: center; }
+        h1 { color: #0078d4; margin-bottom: 30px; }
+        .gallery-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .gallery-item { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .gallery-item img { width: 100%; height: 200px; object-fit: cover; display: block; }
+        .item-info { padding: 15px; font-weight: bold; font-size: 16px; text-transform: capitalize; color: #333; }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>Galería de Imágenes de Azure Blob Storage</h1>
-        <p>Las imágenes que subas a tu contenedor aparecerán aquí automáticamente.</p>
-    </header>
 
-    <main>
-        <div id="galeria" class="galeria-container">
-            <p id="loading">Cargando imágenes desde la nube...</p>
+    <h1>Catálogo de Productos — Azure Blob Storage</h1>
+
+    <div class="gallery-container" id="catalogo">
         </div>
-    </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const galeria = document.getElementById('galeria');
-            const loading = document.getElementById('loading');
-
+            const catalogo = document.getElementById('catalogo');
             try {
-                const response = await fetch('/api/imagenes');
-                const imagenes = await response.json();
+                const response = await fetch('/api/productos');
+                const productos = await response.json();
 
-                loading.style.display = 'none';
-
-                if (imagenes.length === 0) {
-                    galeria.innerHTML = '<p class="no-data">El contenedor de Azure está vacío. Sube imágenes desde el portal para verlas aquí.</p>';
+                if (productos.length === 0) {
+                    catalogo.innerHTML = '<p>No hay imágenes en el contenedor de Azure todavía.</p>';
                     return;
                 }
 
-                // Limpiar contenedor y renderizar las imágenes de Azure
-                galeria.innerHTML = '';
-                imagenes.forEach(img => {
-                    const card = document.createElement('div');
-                    card.className = 'image-card';
-                    
-                    card.innerHTML = `
-                        <img src="${img.url}" alt="${img.nombre}" crossorigin="anonymous">
-                        <div class="image-info">
-                            <span>${img.nombre}</span>
-                        </div>
+                productos.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'gallery-item';
+                    div.innerHTML = `
+                        <img src="${p.url}" alt="${p.nombre}">
+                        <div class="item-info">${p.nombre.split('.')[0]}</div>
                     `;
-                    galeria.appendChild(card);
+                    catalogo.appendChild(div);
                 });
-
             } catch (err) {
-                console.error(err);
-                loading.innerText = 'Error al conectar con el servidor o cargar Azure.';
+                catalogo.innerHTML = '<p>Error al conectar con el servidor.</p>';
             }
         });
     </script>
