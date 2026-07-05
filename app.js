@@ -6,36 +6,46 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Conexión directa usando tus variables del .env
 const AZURE_CONNECTION_STRING = process.env.AZURE_CONNECTION_STRING;
 const CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME || 'imagenes-productos';
 
-const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONNECTION_STRING);
-const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
-
-// Servir el HTML y CSS directo desde la carpeta raíz
+// Servir el HTML estático
 app.use(express.static(__dirname));
 
-// API que lista las imágenes que tienes arriba en Azure
+// API súper protegida para detectar el error exacto
 app.get('/api/productos', async (req, res) => {
     try {
+        if (!AZURE_CONNECTION_STRING) {
+            return res.json([{ nombre: "Falta la variable en el .env", url: "https://picsum.photos/800/600" }]);
+        }
+
+        const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONNECTION_STRING);
+        const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
         const productos = [];
+
         for await (const blob of containerClient.listBlobsFlat()) {
             productos.push({
                 nombre: blob.name,
-                url: `/imagen/${encodeURIComponent(blob.name)}` // Ruta que formatea la imagen
+                url: `/imagen/${encodeURIComponent(blob.name)}`
             });
         }
+        
         res.json(productos);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error con Azure" });
+        console.error("ERROR DETECTADO:", error.message);
+        // Si Azure falla, le enviamos el error al HTML en formato de producto para que lo leas en pantalla
+        res.json([{
+            nombre: `Error de Azure: ${error.message}`,
+            url: "https://picsum.photos/800/600"
+        }]);
     }
 });
 
-// El parámetro mágico que descarga cualquier formato de Azure y obliga al navegador a pintarlo
+// Proxy para forzar el formato
 app.get('/imagen/:nombre', async (req, res) => {
     try {
+        const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONNECTION_STRING);
+        const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
         const blobClient = containerClient.getBlobClient(req.params.nombre);
         const downloadBlockBlobResponse = await blobClient.download(0);
         

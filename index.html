@@ -4,31 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo MultiCloud</title>
-    <style>
-        body { font-family: system-ui, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; text-align: center; }
-        h1 { color: #0078d4; margin-bottom: 30px; }
-        .gallery-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .gallery-item { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .gallery-item img { width: 100%; height: 200px; object-fit: cover; display: block; }
-        .item-info { padding: 15px; font-weight: bold; font-size: 16px; text-transform: capitalize; color: #333; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
     <h1>Catálogo de Productos — Azure Blob Storage</h1>
 
+    <div style="background: white; max-width: 500px; margin: 0 auto 40px auto; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: left;">
+        <h3 style="margin-top: 0; color: #0078d4;">Subir nuevo producto</h3>
+        
+        <form action="/api/subir" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 15px;">
+            
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Nombre</label>
+                <input type="text" name="nombre" placeholder="Ej: Monitor Gamer MSI" required style="width: 95%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Precio</label>
+                <input type="number" name="precio" placeholder="Ej: 249990" required style="width: 95%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Selecciona la imagen</label>
+                <input type="file" name="imagen" accept="image/*" required style="width: 100%;">
+            </div>
+
+            <button type="submit" style="background: #0078d4; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 15px;">
+                💾 Guardar en Azure
+            </button>
+        </form>
+    </div>
+
     <div class="gallery-container" id="catalogo">
-        </div>
+        <p id="loading">Cargando catálogo desde la nube...</p>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const catalogo = document.getElementById('catalogo');
             try {
                 const response = await fetch('/api/productos');
+                
+                if (!response.ok) {
+                    throw new Error(`Estado del servidor: ${response.status}`);
+                }
+                
                 const productos = await response.json();
+                catalogo.innerHTML = '';
 
                 if (productos.length === 0) {
-                    catalogo.innerHTML = '<p>No hay imágenes en el contenedor de Azure todavía.</p>';
+                    catalogo.innerHTML = '<p>No hay imágenes en tu contenedor de Azure.</p>';
                     return;
                 }
 
@@ -37,12 +63,18 @@
                     div.className = 'gallery-item';
                     div.innerHTML = `
                         <img src="${p.url}" alt="${p.nombre}">
-                        <div class="item-info">${p.nombre.split('.')[0]}</div>
+                        <div class="item-info">
+                            <h3 style="margin: 0; text-transform: capitalize;">${p.nombre}</h3>
+                            <p style="color: #0078d4; font-weight: bold; margin: 8px 0 0 0; font-size: 16px;">
+                                $${p.precio.toLocaleString('es-CL')}
+                            </p>
+                        </div>
                     `;
                     catalogo.appendChild(div);
                 });
             } catch (err) {
-                catalogo.innerHTML = '<p>Error al conectar con el servidor.</p>';
+                console.error(err);
+                catalogo.innerHTML = `<div class="error-box">🚨 Error Detallado: ${err.message}</div>`;
             }
         });
     </script>
